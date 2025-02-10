@@ -1,0 +1,8 @@
+209.85.231.104,Google.com 
+207.46.170.123,Microsoft.com  
+72.30.2.43,Yahoo.com 
+66.220.149.25,Facebook.com 
+208.80.152.2,Wikipedia.com  
+143.166.83.38,Dell.com 
+128.242.245.116,Twitter.com 
+
