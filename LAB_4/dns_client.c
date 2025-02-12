@@ -33,7 +33,7 @@ int main() {
     printf("Connected to DNS server...\n");
 
     while (1) {
-        printf("Enter domain name (or 'exit' to quit): ");
+        printf("Enter domain name: ");
         scanf("%s", domain);
 
         if (strcmp(domain, "exit") == 0) {
