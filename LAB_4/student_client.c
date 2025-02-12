@@ -6,104 +6,90 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 
 int main()
 {
-    int sockfd, retval, i;
+    int sockfd, retval;
     int recedbytes, sentbytes;
     struct sockaddr_in serveraddr;
 
     int num;
     int choice = 1;
     char buff[50];
-    char name[50]
+    char name[50];
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1)
     {
-        printf("\nSocket Creation Error");
-        return;
+        printf("\nSocket Creation Error\n");
+        return 1;
     }
 
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_port = htons(3388);
     serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
     retval = connect(sockfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
     if (retval == -1)
     {
-        printf("Connection error");
-        return;
+        printf("Connection error\n");
+        return 1;
     }
     printf("Socket connected...\n");
 
-    while(choice!=4) {
-        printf("Enter choice:\n 1.Registration number\n 2.Student name\n 3.Subject code\n 4.exit");
+    while (choice != 4)
+    {
+        printf("Enter choice:\n 1.Registration number\n 2.Student name\n 3.Subject code\n 4.exit\n");
         scanf("%d", &choice);
+        getchar(); // To clear newline character
+
+        buff[0] = choice;
+
         switch (choice)
         {
         case 1:
-            printf("Enter Registration Number\n");
+            printf("Enter Registration Number: ");
             scanf("%d", &num);
-            buff[0] = choice;
-            buff[1] = num;
-            sentbytes = send(sockfd, buff, sizeof(buff), 0);
-            if (sentbytes == -1)
-            {
-                close(sockfd);
-                printf("Failed to send message");
-                exit(0);
-            }
-            recedbytes= recv(newsockfd, buff, sizeof(buff), 0);
-            printf("Receivecd details:\n%s",buff);
+            memcpy(buff + 1, &num, sizeof(num)); // Copy integer safely
             break;
         case 2:
-            printf("Enter Name\n");
-            scanf("%d", &name);
-            buff[0]=choice;
-            strcpy(buff+1,name);
-            sentbytes = send(sockfd, buff, sizeof(buff), 0);
-            if (sentbytes == -1)
-            {
-                close(sockfd);
-                printf("Failed to send message");
-                exit(0);
-            }
-            recedbytes= recv(newsockfd, buff, sizeof(buff), 0);
-            printf("Receivecd details:\n%s",buff);
+            printf("Enter Name: ");
+            scanf("%s", name);
+            strcpy(buff + 1, name);
             break;
         case 3:
-            printf("Enter Subject Code\n");
-            scanf("%d", &name);
-            buff[0]=choice;
-            strcpy(buff+1,name);
-            sentbytes = send(sockfd, buff, sizeof(buff), 0);
-            if (sentbytes == -1)
-            {
-                close(sockfd);
-                printf("Failed to send message");
-                exit(0);
-            }
-            recedbytes= recv(newsockfd, buff, sizeof(buff), 0);
-            printf("Receivecd details:\n%s",buff);
+            printf("Enter Subject Code: ");
+            scanf("%s", name);
+            strcpy(buff + 1, name);
             break;
         case 4:
-            buff[0]=choice;
-            entbytes = send(sockfd, buff, sizeof(buff), 0);
-            if (sentbytes == -1)
-            {
-                close(sockfd);
-                printf("Failed to send message");
-                exit(0);
-            }
-            break;
+            printf("Exiting...\n");
+            send(sockfd, buff, sizeof(buff), 0);
+            close(sockfd);
+            return 0;
         default:
             printf("Incorrect option!\n");
+            continue;
         }
+
+        sentbytes = send(sockfd, buff, sizeof(buff), 0);
+        if (sentbytes == -1)
+        {
+            printf("Failed to send message\n");
+            close(sockfd);
+            return 1;
+        }
+
+        recedbytes = recv(sockfd, buff, sizeof(buff), 0);
+        if (recedbytes <= 0)
+        {
+            printf("Failed to receive message\n");
+            close(sockfd);
+            return 1;
+        }
+        printf("Received details: %s\n", buff);
     }
 
-
-	close(sockfd);
-	return 0;
+    close(sockfd);
+    return 0;
 }

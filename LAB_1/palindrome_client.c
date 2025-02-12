@@ -34,8 +34,7 @@ int main()
     {
         printf("Enter new string: ");
         scanf("%s", buff);
-        if (!strcmp(buff, "stop"))
-            break;
+        
         sentbytes = sendto(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
         if (sentbytes == -1)
         {
@@ -43,8 +42,10 @@ int main()
             printf("\nMessage sending Failed");
             exit(0);
         }
+        if (!strcmp(buff, "stop"))
+            break;
+        recedbytes = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&serveraddr, &len);
 
-        recedbytes = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
         if (recedbytes == -1)
         {
             printf("\nMessage Receiving Failed");
