@@ -55,7 +55,7 @@ int main() {
         	exit(1);
         }
         if(pid==0) {
-            printf("PID:%d PPID:%d",getpid(),getppid());
+            printf("PID:%d PPID:%d \n",getpid(),getppid());
         	printf("Enter message");
             scanf("%s",buff1);
             sentbytes = send(new_socket, buff1, sizeof(buff1), 0);
@@ -64,8 +64,9 @@ int main() {
                 printf("Failed to send message");
                 exit(0);
             }
+        }
         else {
-            printf("PID:%d PPID:%d",getpid(),getppid());
+            printf("PID:%d PPID:%d \n ",getpid(),getppid());
         	recedbytes = recv(new_socket, buff2, sizeof(buff2), 0);
             if (recedbytes == -1)
             {
@@ -74,7 +75,6 @@ int main() {
                 exit(0);
             }
             printf("Received message:%s \n",buff2);
-        }
         }
     }
 }

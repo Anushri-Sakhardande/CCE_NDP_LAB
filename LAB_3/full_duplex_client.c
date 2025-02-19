@@ -47,7 +47,7 @@ int main() {
             exit(1);
         }
         if(pid==0) {
-            printf("PID:%d PPID:%d",getpid(),getppid());
+            printf("PID:%d PPID:%d \n",getpid(),getppid());
         	recedbytes = recv(sockfd, buff1, sizeof(buff1), 0);
         	if (recedbytes == -1)
 		    {
@@ -58,7 +58,7 @@ int main() {
 		  	printf("Received message:%s\n",buff1);
         }
         else {
-            printf("PID:%d PPID:%d",getpid(),getppid());
+            printf("PID:%d PPID:%d \n",getpid(),getppid());
         	printf("Enter message");
         	scanf("%s",buff2);
         	sentbytes = send(sockfd, buff2, sizeof(buff2), 0);

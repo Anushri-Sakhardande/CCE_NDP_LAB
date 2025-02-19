@@ -1,80 +1,90 @@
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 
+#define PORT 8080
 
-int main()
-{
-    int sockfd, retval;
-    int recedbytes, sentbytes;
-    struct sockaddr_in serveraddr;
+// Function to encode 4-bit data into Hamming(7,4) code
+void encodeHamming(int data[4], int code[7]) {
+    code[2] = data[0];
+    code[4] = data[1];
+    code[5] = data[2];
+    code[6] = data[3];
 
-    int arr[50];
-    int parity=0;
-    int i=0;
-    char buff[50];
+    code[0] = code[2] ^ code[4] ^ code[6]; // P1
+    code[1] = code[2] ^ code[5] ^ code[6]; // P2
+    code[3] = code[4] ^ code[5] ^ code[6]; // P4
+}
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1)
-    {
-        printf("\nSocket Creation Error");
-        return;
+int main() {
+    int sock;
+    struct sockaddr_in server_addr;
+    int data[4], code[7];
+
+    // Create socket
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == -1) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
     }
 
-    serveraddr.sin_family = AF_INET;
-    serveraddr.sin_port = htons(3388);
-    serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    retval = connect(sockfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
-    if (retval == -1)
-    {
-        printf("Connection error");
-        return;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    // Connect to server
+    if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+        perror("Connection failed");
+        close(sock);
+        exit(EXIT_FAILURE);
     }
-    printf("Socket connected...\n");
 
-    printf("Enter the binary message to be sent\n");
-    scanf("%s",buff);
+    printf("Connected to server.\n");
 
-    while(buff[i]!='\0') {
-        if(buff[i]=='1') {
-            parity^=1;
+    // Input 4-bit data
+    printf("Enter 4-bit data (space-separated, e.g., 1 0 1 1): ");
+    for (int i = 0; i < 4; i++) {
+        scanf("%d", &data[i]);
+    }
+
+    // Encode using Hamming(7,4)
+    encodeHamming(data, code);
+
+    printf("Encoded Hamming code: ");
+    for (int i = 0; i < 7; i++) {
+        printf("%d ", code[i]);
+    }
+    printf("\n");
+
+    // Simulate error (optional)
+    int error_index;
+    printf("Enter error position (1-7, 0 for no error): ");
+    scanf("%d", &error_index);
+
+    if (error_index > 0 && error_index <= 7) {
+        code[error_index - 1] ^= 1; // Flip the bit
+        printf("Corrupted code: ");
+        for (int i = 0; i < 7; i++) {
+            printf("%d ", code[i]);
         }
-        i++;
-    }
-    buff[i]=parity+'0';
-
-    //printf("%s",buff);
-
-    printf("Sending correct message\n");
-    sentbytes = send(sockfd,buff,sizeof(buff),0);
-    if(sentbytes==-1) {
-        printf("Sending error");
-        close(sockfd);
+        printf("\n");
     }
 
-    buff[0]=(buff[0]=='1')?'0':'1';
-    printf("Sending corrupted message\n");
-    send(sockfd,buff,sizeof(buff),0);
-    if(sentbytes==-1) {
-        printf("Sending error");
-        close(sockfd);
+    // Send data to server
+    send(sock, code, sizeof(code), 0);
+
+    // Receive corrected data
+    recv(sock, code, sizeof(code), 0);
+
+    printf("Corrected code received from server: ");
+    for (int i = 0; i < 7; i++) {
+        printf("%d ", code[i]);
     }
+    printf("\n");
 
-    printf("Exiting..\n");
-    send(sockfd,"exit",sizeof("exit"),0);
-    if(sentbytes==-1) {
-        printf("Sending error");
-        close(sockfd);
-    }
-
-    close(sockfd);
-
+    // Close socket
+    close(sock);
     return 0;
 }

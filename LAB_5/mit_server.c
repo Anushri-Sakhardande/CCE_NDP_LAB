@@ -10,23 +10,37 @@
 #define PORT 3388
 #define MAX_CLIENTS 2
 #define BUFFER_SIZE 1024
+#define FILENAME "text.txt"  // Corrected string macro
 
 int client_count = 0;
 int client_sockets[MAX_CLIENTS];
 
 void handle_client(int client_sock, struct sockaddr_in client_addr) {
     char buffer[BUFFER_SIZE];
-    char message[BUFFER_SIZE] = "Manipal ";
+    char message[BUFFER_SIZE];
     FILE *file;
 
+    file = fopen(FILENAME, "a");  // Open file in append mode
+    if (file == NULL) {
+        perror("File opening failed");
+        exit(1);
+    }
+
+    // Receive data from client
     recv(client_sock, buffer, sizeof(buffer), 0);
     printf("Received: %s from %s:%d\n", buffer, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-    strcat(message, buffer);
+    // Append message to file
+    fprintf(file, "%s\t", buffer);  
+    fclose(file);
+
+    // Store message in global buffer
+    strcpy(message, buffer);
 
     if (client_count == MAX_CLIENTS) {
         printf("Final message: %s\n", message);
 
+        // Send the final message to all connected clients
         for (int i = 0; i < MAX_CLIENTS; i++) {
             send(client_sockets[i], message, strlen(message) + 1, 0);
         }

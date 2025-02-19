@@ -6,78 +6,87 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 
-void crc(int n, int* arr) {
+#define POLY_12  0x80F  
+#define POLY_16  0x8005  
 
+unsigned int compute_crc(const char *data, int poly, int crc_bits) {
+    unsigned int crc = 0;
+    int len = strlen(data);
+
+    for (int i = 0; i < len; i++) {
+        crc ^= (data[i] << (crc_bits - 8)); // XOR with left shift
+
+        for (int j = 0; j < 8; j++) {
+            if (crc & (1 << (crc_bits - 1))) {
+                crc = (crc << 1) ^ poly;
+            } else {
+                crc <<= 1;
+            }
+        }
+    }
+    return crc & ((1 << crc_bits) - 1); // Mask to fit CRC bits
 }
 
-int main()
-{
+int main() {
     int sockfd, retval;
-    int recedbytes, sentbytes;
+    int sentbytes;
     struct sockaddr_in serveraddr;
 
-    int arr[50];
-    int parity=0;
-    int i=0;
     char buff[50];
-    int arr[50];
-
+    
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1)
-    {
-        printf("\nSocket Creation Error");
-        return;
+    if (sockfd == -1) {
+        printf("\nSocket Creation Error\n");
+        return 1;
     }
 
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_port = htons(3388);
     serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    
     retval = connect(sockfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
-    if (retval == -1)
-    {
-        printf("Connection error");
-        return;
+    if (retval == -1) {
+        printf("Connection error\n");
+        close(sockfd);
+        return 1;
     }
+
     printf("Socket connected...\n");
+    printf("Enter the binary message to be sent: ");
+    scanf("%s", buff);
 
-    printf("Enter the binary message to be sent\n");
-    scanf("%s",buff);
+    // Compute CRC
+    unsigned int crc12 = compute_crc(buff, POLY_12, 12);
+    unsigned int crc16 = compute_crc(buff, POLY_16, 16);
 
-    for(i=0;i<50;i++) {
-        if(buff[i]!='\0') {
-            arr[i] = buff[i]-'\0';
-        }
-        else {
-            arr[i]=0;
-        }
-    }
+    // Append CRC to message
+    char message_with_crc[100];
+    snprintf(message_with_crc, sizeof(message_with_crc), "%s|%X", buff, crc16);
 
-    printf("Sending correct message\n");
-    sentbytes = send(sockfd,arr,sizeof(arr),0);
-    if(sentbytes==-1) {
-        printf("Sending error");
+    printf("Sending correct message: %s\n", message_with_crc);
+    sentbytes = send(sockfd, message_with_crc, strlen(message_with_crc), 0);
+    if (sentbytes == -1) {
+        printf("Sending error\n");
         close(sockfd);
+        return 1;
     }
 
-    arr[0]=!arr[0];
-    printf("Sending corrupted message\n");
-    send(sockfd,buff,sizeof(buff),0);
-    if(sentbytes==-1) {
-        printf("Sending error");
+    // Simulate corruption by flipping a bit
+    message_with_crc[0] = (message_with_crc[0] == '0') ? '1' : '0';
+
+    printf("Sending corrupted message: %s\n", message_with_crc);
+    sentbytes = send(sockfd, message_with_crc, strlen(message_with_crc), 0);
+    if (sentbytes == -1) {
+        printf("Sending error\n");
         close(sockfd);
+        return 1;
     }
 
-    printf("Exiting..\n");
-    send(sockfd,"exit",sizeof("exit"),0);
-    if(sentbytes==-1) {
-        printf("Sending error");
-        close(sockfd);
-    }
+    // Send exit signal
+    printf("Exiting...\n");
+    send(sockfd, "exit", sizeof("exit"), 0);
 
     close(sockfd);
-
     return 0;
 }

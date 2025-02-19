@@ -41,16 +41,16 @@ int main()
     {
         printf("Enter choice:\n 1.Registration number\n 2.Student name\n 3.Subject code\n 4.exit\n");
         scanf("%d", &choice);
-        getchar(); // To clear newline character
+        getchar();
 
-        buff[0] = choice;
+        buff[0] = choice+'0';
 
         switch (choice)
         {
         case 1:
             printf("Enter Registration Number: ");
             scanf("%d", &num);
-            memcpy(buff + 1, &num, sizeof(num)); // Copy integer safely
+            memcpy(buff + 1, &num, sizeof(num)); 
             break;
         case 2:
             printf("Enter Name: ");
@@ -87,7 +87,7 @@ int main()
             close(sockfd);
             return 1;
         }
-        printf("Received details: %s\n", buff);
+        printf("Received details:\n %s\n", buff);
     }
 
     close(sockfd);

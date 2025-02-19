@@ -7,10 +7,13 @@
 #include <netinet/in.h>
 
 #define MAXSIZE 50
+#define PORT 3388
 
 typedef struct
 {
+    char courseCode[10];
     char courseName[50];
+    int marks;
 } Course;
 
 typedef struct
@@ -24,6 +27,7 @@ typedef struct
     Course courses[6];
 } Student;
 
+// Function to initialize a student's data
 Student fillStudent()
 {
     Student s;
@@ -33,100 +37,118 @@ Student fillStudent()
     strcpy(s.dept, "CSE");
     s.semester = 4;
     s.section = 'A';
+    
+    strcpy(s.courses[0].courseCode, "CS101");
     strcpy(s.courses[0].courseName, "Data Structures");
+    s.courses[0].marks = 85;
+    
+    strcpy(s.courses[1].courseCode, "CS102");
     strcpy(s.courses[1].courseName, "Operating Systems");
+    s.courses[1].marks = 78;
+    
     return s;
 }
 
 int main()
 {
-    int sockfd, newsockfd, retval;
-    socklen_t actuallen;
-    int recedbytes, sentbytes;
-    struct sockaddr_in serveraddr, clientaddr;
-    char buff[50];
-    int choice = 1;
+    int sockfd, newsockfd;
+    socklen_t client_len;
+    struct sockaddr_in server_addr, client_addr;
+    char buff[MAXSIZE];
     Student student = fillStudent();
 
+    // Create socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1)
     {
-        printf("\nSocket creation error\n");
-        return 1;
+        perror("Socket creation failed");
+        exit(1);
     }
 
-    serveraddr.sin_family = AF_INET;
-    serveraddr.sin_port = htons(3388);
-    serveraddr.sin_addr.s_addr = INADDR_ANY;
+    // Configure server settings
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    retval = bind(sockfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
-    if (retval == -1)
+    // Bind socket
+    if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
     {
-        printf("Binding error\n");
+        perror("Binding failed");
         close(sockfd);
-        return 1;
+        exit(1);
     }
-    printf("Socket binded\n");
+    printf("Socket binded successfully.\n");
 
-    retval = listen(sockfd, 5);
-    if (retval == -1)
+    // Start listening
+    if (listen(sockfd, 5) == -1)
     {
-        printf("Listen error\n");
+        perror("Listen failed");
         close(sockfd);
-        return 1;
+        exit(1);
     }
-    printf("Server listening...\n");
-
-    actuallen = sizeof(clientaddr);
-    newsockfd = accept(sockfd, (struct sockaddr *)&clientaddr, &actuallen);
-    if (newsockfd == -1)
-    {
-        printf("Accept error\n");
-        close(sockfd);
-        return 1;
-    }
-    printf("Server accepted connection\n");
+    printf("Server listening on port %d...\n", PORT);
 
     while (1)
     {
-        recedbytes = recv(newsockfd, buff, sizeof(buff), 0);
-        if (recedbytes <= 0)
+        client_len = sizeof(client_addr);
+        newsockfd = accept(sockfd, (struct sockaddr *)&client_addr, &client_len);
+        if (newsockfd == -1)
         {
-            printf("Client disconnected\n");
-            break;
+            perror("Accept failed");
+            continue;
         }
+        printf("Client connected.\n");
 
-        choice = buff[0];
+        // Fork a new child process for each request
+        pid_t pid = fork();
 
-        switch (choice)
+        if (pid == 0) // Child process
         {
-        case 1:
-            snprintf(buff, sizeof(buff), "Reg No: %d", student.regNo);
-            break;
-        case 2:
-            snprintf(buff, sizeof(buff), "Name: %s", student.name);
-            break;
-        case 3:
-            snprintf(buff, sizeof(buff), "Subject: %s", student.courses[0].courseName);
-            break;
-        case 4:
-            printf("Goodbye!\n");
-            close(newsockfd);
             close(sockfd);
-            return 0;
-        default:
-            snprintf(buff, sizeof(buff), "Invalid option!");
-        }
+            int received_bytes = recv(newsockfd, buff, sizeof(buff), 0);
+            if (received_bytes <= 0)
+            {
+                perror("Receive failed");
+                close(newsockfd);
+                exit(0);
+            }
 
-        sentbytes = send(newsockfd, buff, sizeof(buff), 0);
-        if (sentbytes == -1)
+            int choice = buff[0] - '0'; // Convert char to int
+            memset(buff, 0, sizeof(buff));
+            printf("%d\n",choice);
+            switch (choice)
+            {
+            case 1:
+                snprintf(buff, sizeof(buff), "PID: %d | Name: %s | Address: %s", getpid(), student.name, student.address);
+                break;
+            case 2:
+                snprintf(buff, sizeof(buff), "PID: %d | Dept: %s | Semester: %d | Section: %c", getpid(), student.dept, student.semester, student.section);
+                break;
+            case 3:
+                snprintf(buff, sizeof(buff), "PID: %d | Course: %s | Marks: %d", getpid(), student.courses[0].courseName, student.courses[0].marks);
+                break;
+            default:
+                snprintf(buff, sizeof(buff), "Invalid option! Use 1, 2, or 3.");
+                break;
+            }
+
+            // Send response back to client
+            send(newsockfd, buff, sizeof(buff), 0);
+
+            close(newsockfd);
+            exit(0); // Terminate child process
+        }
+        else if (pid > 0) // Parent process
         {
-            printf("Failed to send message\n");
-            break;
+            close(newsockfd); // Parent closes the client socket
+        }
+        else
+        {
+            perror("Fork failed");
+            close(newsockfd);
         }
     }
 
-    close(newsockfd);
     close(sockfd);
     return 0;
 }

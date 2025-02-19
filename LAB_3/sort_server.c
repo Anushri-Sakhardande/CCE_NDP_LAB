@@ -57,7 +57,7 @@ int main() {
         j=0;
         k=0;
         //empty the strings
-        memset();
+        //memset();
         recedbytes = recv(new_socket, buff, sizeof(buff), 0);
         if (recedbytes == -1)
         {
@@ -100,7 +100,7 @@ int main() {
             char swap;
             for(i=0;i<n1-1;i++) {
                 for(j=i+1;j<n1;j++) {
-                    if (alpha[i] > alpha[j])
+                    if (alpha[i] < alpha[j])
                     {
                         swap = alpha[i];
                         alpha[i] = alpha[j];
