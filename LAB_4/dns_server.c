@@ -6,7 +6,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define PORT 3388
+#define PORT 8080
 #define MAXSIZE 1024
 #define DB_FILE "database.txt"
 
@@ -18,14 +18,16 @@ void lookupDomain(const char *domain, char *ipAddress) {
         return;
     }
 
-    char fileDomain[100], fileIP[100];
+    char line[256], fileIP[100], fileDomain[100];
     int found = 0;
 
-    while (fscanf(file, "%s %s", fileDomain, fileIP) != EOF) {
-        if (strcmp(domain, fileDomain) == 0) {
-            strcpy(ipAddress, fileIP);
-            found = 1;
-            break;
+    while (fgets(line, sizeof(line), file)) {
+        if (sscanf(line, "%99[^,],%99s", fileIP, fileDomain) == 2) {
+            if (strcmp(domain, fileDomain) == 0) {
+                strcpy(ipAddress, fileIP);
+                found = 1;
+                break;
+            }
         }
     }
     fclose(file);

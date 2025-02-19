@@ -6,7 +6,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define PORT 3388
+#define PORT 8080
 #define MAXSIZE 1024
 
 int main() {
