@@ -1,0 +1,21 @@
+{
+    "name": "GDB WSL",
+    "type": "cppdbg",
+    "request": "launch",
+    "program": "${workspaceFolder}/my_program",
+    "args": [],
+    "stopAtEntry": false,
+    "cwd": "${workspaceFolder}",
+    "environment": [],
+    "externalConsole": true,
+    "MIMode": "gdb",
+    "setupCommands": [
+        { "text": "-enable-pretty-printing" }
+    ],
+    "pipeTransport": {
+        "pipeCwd": "",
+        "pipeProgram": "wsl",
+        "pipeArgs": [],
+        "debuggerPath": "/usr/bin/gdb"
+    }
+}
